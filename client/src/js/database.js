@@ -1,73 +1,62 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const WebpackPwaManifest = require('webpack-pwa-manifest');
-const path = require('path');
-const { InjectManifest } = require('workbox-webpack-plugin');
+import { openDB } from 'idb';
 
-module.exports = () => {
-  return {
-    mode: 'development',
-    entry: {
-      main: './src/js/index.js',
-      install: './src/js/install.js'
+// Function to initialize the IndexedDB database
+const initdb = async () =>
+  openDB('jate', 1, {
+    // Upgrade function to handle database schema changes
+    upgrade(db) {
+      // Check if the object store already exists
+      if (db.objectStoreNames.contains('jate')) {
+        console.log('jate database already exists');
+        return;
+      }
+      // Create a new object store with auto-incrementing key path
+      db.createObjectStore('jate', { keyPath: 'id', autoIncrement: true });
+      console.log('jate database created');
     },
-    output: {
-      filename: '[name].bundle.js',
-      path: path.resolve(__dirname, 'dist'),
-    },
-    plugins: [
-      // Webpack plugin to generate html file and inject bundles
-      new HtmlWebpackPlugin({
-        template: './index.html',
-        title: 'Editor'
-      }),
+  });
 
-      // service worker
-      new InjectManifest({
-        swSrc: './src-sw.js',
-        swDest: 'src-sw.js',
-      }),
-      
-      // Creates a manifest.json file.
-      new WebpackPwaManifest({
-        fingerprints: false,
-        inject: true,
-        name: 'Editor',
-        short_name: 'edit',
-        description: 'Edit your stuff here.',
-        background_color: '#225ca3',
-        theme_color: '#225ca3',
-        start_url: './',
-        publicPath: './',
-        icons: [
-          {
-            src: path.resolve('src/images/logo.png'),
-            sizes: [96, 128, 192, 256, 384, 512],
-            destination: path.join('assets', 'icons'),
-          },
-        ],
-      }),
+// Method to add content to the IndexedDB database
+export const putDb = async (content) => {
+  console.log("Post this to the database!");
 
-    ],
+  // Open a connection to the IndexedDB database
+  const jateDB = await openDB('jate', 1);
 
-    module: { // Css Loaders 
-      rules: [
-        {
-          test: /\.css$/i,
-          use: ['style-loader', 'css-loader'],
-        },
-        {
-          test: /\.m?js$/,
-          exclude: /node_modules/,
-          // Add babel to webpack
-          use: {
-            loader: 'babel-loader',
-            options: {
-              presets: ['@babel/preset-env'],
-              plugins: ['@babel/plugin-proposal-object-rest-spread', '@babel/transform-runtime'],
-            },
-          },
-        },
-      ],
-    },
-  };
+  // Start a read-write transaction
+  const transaction = jateDB.transaction('jate', 'readwrite');
+
+  // Open the object store
+  const store = transaction.objectStore('jate');
+
+  // Add content to the object store
+  const request = store.add({ content });
+
+  // Wait for the request to complete and log the result
+  const result = await request;
+  console.log('Data saved to the database', result);
 };
+
+// Method to retrieve all content from the IndexedDB database
+export const getDb = async () => {
+  console.log('Get stuff from the database');
+
+  // Open a connection to the IndexedDB database
+  const jateDB = await openDB('jate', 1);
+
+  // Start a read-only transaction
+  const transaction = jateDB.transaction('jate', 'readonly');
+
+  // Open the object store
+  const store = transaction.objectStore('jate');
+
+  // Retrieve all data from the object store
+  const request = store.getAll();
+
+  // Wait for the request to complete and log the result
+  const result = await request;
+  console.log('result.value', result);
+}; 
+
+// Initialize the database when the module is imported
+initdb();

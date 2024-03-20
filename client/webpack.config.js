@@ -21,13 +21,13 @@ module.exports = () => {
         title: 'Editor'
       }),
 
-      // service worker
+      // Service worker injection
       new InjectManifest({
         swSrc: './src-sw.js',
         swDest: 'src-sw.js',
       }),
       
-      // Creates a manifest.json file.
+      // Creates a manifest.json file
       new WebpackPwaManifest({
         fingerprints: false,
         inject: true,
@@ -49,7 +49,7 @@ module.exports = () => {
 
     ],
 
-    module: { // Css Loaders 
+    module: { // CSS Loaders 
       rules: [
         {
           test: /\.css$/i,
@@ -58,7 +58,7 @@ module.exports = () => {
         {
           test: /\.m?js$/,
           exclude: /node_modules/,
-          // Add babel to webpack
+          // Babel configuration for JavaScript files
           use: {
             loader: 'babel-loader',
             options: {
@@ -71,3 +71,4 @@ module.exports = () => {
     },
   };
 };
+
